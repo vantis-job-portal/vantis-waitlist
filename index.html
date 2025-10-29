@@ -35,6 +35,15 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        
+        /* This is the honeypot style to hide the field */
+        .vantis-hp-field {
+            position: absolute;
+            left: -5000px;
+            aria-hidden: true;
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-slate-100 dark:bg-[#000000]">
@@ -77,15 +86,17 @@
         const selectClasses = `${formInputClasses} appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,<svg_xmlns="http://www.w3.org/2000/svg"_viewBox="0_0_20_20"_fill="%2364748b"><path_fill-rule="evenodd"_d="M5.293_7.293a1_1_0_011.414_0L10_10.586l3.293-3.293a1_1_0_111.414_1.414l-4_4a1_1_0_01-1.414_0l-4-4a1_1_0_010-1.414z"_clip-rule="evenodd"_/></svg>')] dark:bg-[url('data:image/svg+xml;charset=UTF-8,<svg_xmlns="http://www.w3.org/2000/svg"_viewBox="0_0_20_20"_fill="%2394a3b8"><path_fill-rule="evenodd"_d="M5.293_7.293a1_1_0_011.414_0L10_10.586l3.293-3.293a1_1_0_111.414_1.414l-4_4a1_1_0_01-1.414_0l-4-4a1_1_0_010-1.414z"_clip-rule="evenodd"_/></svg>')] bg-no-repeat bg-[position:right_0.75rem_center] bg-[length:1.25em] pr-10`;
         const audienceChoiceBaseClasses = "cursor-pointer border border-slate-300 dark:border-slate-700 rounded-lg p-4 text-center transition-all duration-200 hover:border-[#04ACD9] dark:hover:border-[#04ACD9]";
         const audienceChoiceSelectedClasses = "border-[#04ACD9] dark:border-[#04ACD9] ring-2 ring-[#04ACD9] dark:ring-[#04ACD9] bg-[#04ACD9]/5 dark:bg-[#04ACD9]/10";
+        const checkboxClasses = "h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-[#45B930] focus:ring-[#45B930] dark:bg-slate-700 dark:checked:bg-[#45B930] dark:focus:ring-offset-slate-800";
 
-// --- SVG Logo Component ---
-const VantisLogo = () => (
-  <img 
-    src="Vantis-Logo.svg.svg" 
-    alt="Vantis Logo" 
-    className="h-14 w-auto"
-  />
-);
+        // --- SVG Logo Component ---
+        // This now points to your logo file with the double extension.
+        const VantisLogo = () => (
+          <img 
+            src="Vantis-Logo.svg.svg" 
+            alt="Vantis Logo" 
+            className="h-14 w-auto"
+          />
+        );
 
         // --- Form Select Options Constants ---
         const companySizeOptions = [
@@ -102,14 +113,62 @@ const VantisLogo = () => (
           { value: "Exploring (6+ Months)", label: "Just exploring (6+ months)" },
         ];
 
+        // --- UPDATED list to include country codes and flags (unicode emojis) ---
         const africanCountries = [
-          "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde", "Cameroon", 
-          "Central African Republic", "Chad", "Comoros", "Congo (Congo-Brazzaville)", "Cote d'Ivoire", "Djibouti", 
-          "DR Congo (Congo-Kinshasa)", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", "Gabon", 
-          "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya", "Madagascar", 
-          "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", 
-          "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone", "Somalia", "South Africa", 
-          "South Sudan", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia", "Zimbabwe"
+            { name: "Nigeria", code: "+234", flag: "🇳🇬" },
+            { name: "Ghana", code: "+233", flag: "🇬🇭" },
+            { name: "South Africa", code: "+27", flag: "🇿🇦" },
+            { name: "Kenya", code: "+254", flag: "🇰🇪" },
+            { name: "Egypt", code: "+20", flag: "🇪🇬" },
+            { name: "Algeria", code: "+213", flag: "🇩🇿" },
+            { name: "Angola", code: "+244", flag: "🇦🇴" },
+            { name: "Benin", code: "+229", flag: "🇧🇯" },
+            { name: "Botswana", code: "+267", flag: "🇧🇼" },
+            { name: "Burkina Faso", code: "+226", flag: "🇧🇫" },
+            { name: "Burundi", code: "+257", flag: "🇧🇮" },
+            { name: "Cabo Verde", code: "+238", flag: "🇨🇻" },
+            { name: "Cameroon", code: "+237", flag: "🇨🇲" },
+            { name: "Central African Republic", code: "+236", flag: "🇨🇫" },
+            { name: "Chad", code: "+235", flag: "🇹🇩" },
+            { name: "Comoros", code: "+269", flag: "🇰🇲" },
+            { name: "Congo (Congo-Brazzaville)", code: "+242", flag: "🇨🇬" },
+            { name: "Cote d'Ivoire", code: "+225", flag: "🇨🇮" },
+            { name: "Djibouti", code: "+253", flag: "🇩🇯" },
+            { name: "DR Congo (Congo-Kinshasa)", code: "+243", flag: "🇨🇩" },
+            { name: "Equatorial Guinea", code: "+240", flag: "🇬🇶" },
+            { name: "Eritrea", code: "+291", flag: "🇪🇷" },
+            { name: "Eswatini", code: "+268", flag: "🇸🇿" },
+            { name: "Ethiopia", code: "+251", flag: "🇪🇹" },
+            { name: "Gabon", code: "+241", flag: "🇬🇦" },
+            { name: "Gambia", code: "+220", flag: "🇬🇲" },
+            { name: "Guinea", code: "+224", flag: "🇬🇳" },
+            { name: "Guinea-Bissau", code: "+245", flag: "🇬🇼" },
+            { name: "Lesotho", code: "+266", flag: "🇱🇸" },
+            { name: "Liberia", code: "+231", flag: "🇱🇷" },
+            { name: "Libya", code: "+218", flag: "🇱🇾" },
+            { name: "Madagascar", code: "+261", flag: "🇲🇬" },
+            { name: "Malawi", code: "+265", flag: "🇲🇼" },
+            { name: "Mali", code: "+223", flag: "🇲🇱" },
+            { name: "Mauritania", code: "+222", flag: "🇲🇷" },
+            { name: "Mauritius", code: "+230", flag: "🇲🇺" },
+            { name: "Morocco", code: "+212", flag: "🇲🇦" },
+            { name: "Mozambique", code: "+258", flag: "🇲🇿" },
+            { name: "Namibia", code: "+264", flag: "🇳🇦" },
+            { name: "Niger", code: "+227", flag: "🇳🇪" },
+            { name: "Rwanda", code: "+250", flag: "🇷🇼" },
+            { name: "Sao Tome and Principe", code: "+239", flag: "🇸🇹" },
+            { name: "Senegal", code: "+221", flag: "🇸🇳" },
+            { name: "Seychelles", code: "+248", flag: "🇸🇨" },
+            { name: "Sierra Leone", code: "+232", flag: "🇸🇱" },
+            { name: "Somalia", code: "+252", flag: "🇸🇴" },
+            { name: "South Sudan", code: "+211", flag: "🇸🇸" },
+            { name: "Sudan", code: "+249", flag: "🇸🇩" },
+            { name: "Tanzania", code: "+255", flag: "🇹🇿" },
+            { name: "Togo", code: "+228", flag: "🇹🇬" },
+            { name: "Tunisia", code: "+216", flag: "🇹🇳" },
+            { name: "Uganda", code: "+256", flag: "🇺🇬" },
+            { name: "Zambia", code: "+260", flag: "🇿🇲" },
+            { name: "Zimbabwe", code: "+263", flag: "🇿🇼" }
         ];
 
         const competencyLevels = [
@@ -150,6 +209,9 @@ const VantisLogo = () => (
                 country: '',
                 level: '',
                 sector: '',
+                phoneNumber: '', // --- NEW FIELD ---
+                whatsAppConsent: false, // --- NEW FIELD ---
+                website: '', // --- HONEYPOT FIELD ---
             });
             const [formStatus, setFormStatus] = useState('idle'); // 'idle', 'submitting', 'success', 'error'
             const [successMessage, setSuccessMessage] = useState('');
@@ -201,6 +263,12 @@ const VantisLogo = () => (
                 const { name, value } = e.target;
                 setFormData(prev => ({ ...prev, [name]: value }));
             };
+            
+            // New handler for checkboxes
+            const handleCheckboxChange = (e) => {
+                const { name, checked } = e.target;
+                setFormData(prev => ({ ...prev, [name]: checked }));
+            };
 
             const handleUserTypeChange = (e) => {
                 const type = e.target.value;
@@ -213,11 +281,28 @@ const VantisLogo = () => (
                     hiringIntent: '',
                     country: '',
                     level: '',
+                    phoneNumber: '',
+                    whatsAppConsent: false,
                 }));
             };
             
             const handleSubmit = async (e) => {
                 e.preventDefault();
+
+                // --- HONEYPOT CHECK ---
+                // If this field is filled out, it's a bot.
+                // We'll "fake" a success message to trick the bot.
+                if (formData.website) {
+                    console.log("Bot detected! Honeypot field was filled.");
+                    setFormStatus('success');
+                    // Set a generic success message just in case
+                    setSuccessMessage(`
+                        <h3 class="font-semibold text-lg mb-1">Thank You!</h3>
+                        <p>Your submission has been received.</p>
+                    `);
+                    return; // Stop here, do not save to database.
+                }
+                // --- END HONEYPOT CHECK ---
                 
                 if (!userId) {
                     setErrorMessage("Authentication not ready. Please wait a moment and try again.");
@@ -245,6 +330,9 @@ const VantisLogo = () => (
                     return;
                 }
 
+                // Find the selected country object
+                const selectedCountry = africanCountries.find(c => c.name === formData.country);
+
                 const data = {
                     userType: userType,
                     firstName: formData.firstName,
@@ -265,11 +353,19 @@ const VantisLogo = () => (
                         data.hiringIntent = formData.hiringIntent;
                     }
                 } else if (userType === 'Talent') {
-                    if (!formData.country || !formData.level) {
+                    // Updated validation for Talent
+                    const phoneRegex = /^\d{6,14}$/; // Simple regex for 6-14 digits
+                    if (!formData.country || !formData.level || !formData.phoneNumber) {
                         isValid = false;
+                    } else if (!phoneRegex.test(formData.phoneNumber)) {
+                        setErrorMessage('Please enter a valid phone number (digits only).');
+                        setFormStatus('error');
+                        return;
                     } else {
                         data.country = formData.country;
                         data.level = formData.level;
+                        data.phoneNumber = `${selectedCountry.code}${formData.phoneNumber}`; // Store full number
+                        data.whatsAppConsent = formData.whatsAppConsent;
                     }
                 }
 
@@ -300,9 +396,10 @@ const VantisLogo = () => (
                                 <p>Vantis is officially launching in Nigeria in December 2025! You're on the priority list for exclusive access to job opportunities and launch updates.</p>
                             `);
                         } else {
+                            // --- THIS IS THE UPDATED MESSAGE ---
                             setSuccessMessage(`
-                                <h3 class="font-semibold text-lg mb-1">You're on our Global Radar!</h3>
-                                <p>Thanks for signing up! Our immediate focus is on our Nigeria launch. By registering, you've secured your place for our future expansion, and we'll notify you as new opportunities become available.</p>
+                                <h3 class="font-semibold text-lg mb-1">Thanks for Registering!</h3>
+                                <p>We launch in Nigeria first. You’re now queued for our Africa-wide expansion and will be notified as soon as your country goes live.</p>
                             `);
                         }
                     }
@@ -317,6 +414,7 @@ const VantisLogo = () => (
 
             // --- Render Logic ---
             const isLoading = formStatus === 'submitting';
+            const selectedCountry = africanCountries.find(c => c.name === formData.country);
 
             return (
                 <div className="text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center min-h-screen px-4 py-8" style={{ fontFamily: "'Gotham', 'Inter', sans-serif" }}>
@@ -346,6 +444,8 @@ const VantisLogo = () => (
                 </div>
 
                 <div className="w-full max-w-xl text-center py-16 sm:py-24">
+                    
+                    {/* This div now just wraps the logo component */}
                     <div className="h-14 w-auto mx-auto mb-10 fade-in flex items-center justify-center" style={{ animationDelay: "0.1s" }}>
                         <VantisLogo />
                     </div>
@@ -361,6 +461,22 @@ const VantisLogo = () => (
                     
                     {formStatus !== 'success' && (
                         <div id="formFields" className="space-y-6 sm:space-y-7">
+                        
+                        {/* --- HONEYPOT FIELD (INVISIBLE) --- */}
+                        <div className="vantis-hp-field" aria-hidden="true">
+                            <label htmlFor="website">Website</label>
+                            <input 
+                                type="text" 
+                                id="website" 
+                                name="website" 
+                                value={formData.website} 
+                                onChange={handleInputChange} 
+                                tabIndex="-1" 
+                                autoComplete="off"
+                            />
+                        </div>
+                        {/* --- END HONEYPOT FIELD --- */}
+
                         <div>
                             <label className={`${formLabelClasses} text-center mb-4`}>I am primarily interested as a...</label>
                             <div className="grid grid-cols-2 gap-4">
@@ -452,24 +568,67 @@ const VantisLogo = () => (
 
                         {userType === 'Talent' && (
                             <div id="talentFields" className="space-y-6 sm:space-y-7">
-                            <div>
-                                <label htmlFor="country" className={formLabelClasses}>Country</label>
-                                <select id="country" name="country" required className={selectClasses} value={formData.country} onChange={handleInputChange}>
-                                <option value="" disabled>Select your country...</option>
-                                {africanCountries.map(country => (
-                                    <option key={country} value={country}>{country}</option>
-                                ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="level" className={formLabelClasses}>Level of Competency / Role</label>
-                                <select id="level" name="level" required className={selectClasses} value={formData.level} onChange={handleInputChange}>
-                                <option value="" disabled>Select your level...</option>
-                                {competencyLevels.map(option => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                ))}
-                                </select>
-                            </div>
+                                <div>
+                                    <label htmlFor="country" className={formLabelClasses}>Country</label>
+                                    <select id="country" name="country" required className={selectClasses} value={formData.country} onChange={handleInputChange}>
+                                    <option value="" disabled>Select your country...</option>
+                                    {/* --- UPDATED to show flags in dropdown --- */}
+                                    {africanCountries.map(country => (
+                                        <option key={country.name} value={country.name}>
+                                            {country.flag} {country.name} ({country.code})
+                                        </option>
+                                    ))}
+                                    </select>
+                                </div>
+                                
+                                {/* --- NEW PHONE FIELD --- */}
+                                <div>
+                                    <label htmlFor="phoneNumber" className={formLabelClasses}>Phone Number</label>
+                                    <div className="flex">
+                                        {/* --- UPDATED to show flag in prefix --- */}
+                                        <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-sm">
+                                            {selectedCountry ? `${selectedCountry.flag} ${selectedCountry.code}` : '+...'}
+                                        </span>
+                                        <input 
+                                            type="tel" 
+                                            id="phoneNumber" 
+                                            name="phoneNumber" 
+                                            required 
+                                            className={formInputClasses + " !rounded-l-none"}
+                                            placeholder="801 234 5678" 
+                                            value={formData.phoneNumber} 
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+                                </div>
+                                {/* --- END NEW PHONE FIELD --- */}
+
+                                {/* --- NEW WHATSAPP CHECKBOX (MOVED) --- */}
+                                <div className="flex items-center gap-2 -mt-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        id="whatsAppConsent"
+                                        name="whatsAppConsent"
+                                        checked={formData.whatsAppConsent}
+                                        onChange={handleCheckboxChange}
+                                        className={checkboxClasses}
+                                    />
+                                    <label htmlFor="whatsAppConsent" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        Send me updates via WhatsApp
+                                    </label>
+                                </div>
+                                {/* --- END WHATSAPP CHECKBOX --- */}
+
+                                <div>
+                                    <label htmlFor="level" className={formLabelClasses}>Level of Competency / Role</label>
+                                    <select id="level" name="level" required className={selectClasses} value={formData.level} onChange={handleInputChange}>
+                                    <option value="" disabled>Select your level...</option>
+                                    {competencyLevels.map(option => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                    </select>
+                                </div>
+                                
                             </div>
                         )}
 
@@ -484,8 +643,9 @@ const VantisLogo = () => (
                         </div>
 
                         <div className="pt-2">
-                            <button type="submit" id="submitButton" disabled={isLoading || !userId} className="w-full font-bold py-4 px-8 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-white bg-[#45B930] hover:bg-[#3da82b] transition-colors">
-                            {isLoading ? 'Submitting...' : (userId ? 'Notify Me When You Launch' : 'Connecting...') }
+                            {/* --- THIS BUTTON IS NOW LARGER (text-lg) AND HAS NEW TEXT --- */}
+                            <button type="submit" id="submitButton" disabled={isLoading || !userId} className="w-full font-bold text-lg py-4 px-8 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-white bg-[#45B930] hover:bg-[#3da82b] transition-colors">
+                            {isLoading ? 'Submitting...' : (userId ? 'Notify me when you launch' : 'Connecting...') }
                             </button>
                         </div>
                         </div>
@@ -518,7 +678,4 @@ const VantisLogo = () => (
     </script>
 </body>
 </html>
-
-
-
 
