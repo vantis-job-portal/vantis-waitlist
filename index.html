@@ -87,9 +87,16 @@
         const audienceChoiceBaseClasses = "cursor-pointer border border-slate-300 dark:border-slate-700 rounded-lg p-4 text-center transition-all duration-200 hover:border-[#04ACD9] dark:hover:border-[#04ACD9]";
         const audienceChoiceSelectedClasses = "border-[#04ACD9] dark:border-[#04ACD9] ring-2 ring-[#04ACD9] dark:ring-[#04ACD9] bg-[#04ACD9]/5 dark:bg-[#04ACD9]/10";
         const checkboxClasses = "h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-[#45B930] focus:ring-[#45B930] dark:bg-slate-700 dark:checked:bg-[#45B930] dark:focus:ring-offset-slate-800";
+        const errorTextClasses = "mt-1.5 text-xs text-red-600 dark:text-red-400 text-left";
+
+        // --- Icon Components ---
+        const CheckCircleIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-green-500">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+            </svg>
+        );
 
         // --- SVG Logo Component ---
-        // This now points to your logo file with the double extension.
         const VantisLogo = () => (
           <img 
             src="Vantis-Logo.svg.svg" 
@@ -209,31 +216,29 @@
                 country: '',
                 level: '',
                 sector: '',
-                phoneNumber: '', // --- NEW FIELD ---
-                whatsAppConsent: false, // --- NEW FIELD ---
-                website: '', // --- HONEYPOT FIELD ---
+                phoneNumber: '', 
+                whatsAppConsent: false,
+                website: '', // Honeypot
             });
+            
+            // --- NEW validation states ---
+            const [formErrors, setFormErrors] = useState({});
+            const [touched, setTouched] = useState({});
+
             const [formStatus, setFormStatus] = useState('idle'); // 'idle', 'submitting', 'success', 'error'
             const [successMessage, setSuccessMessage] = useState('');
             const [errorMessage, setErrorMessage] = useState('');
-            const [userId, setUserId] = useState(null); // To store the authenticated user's ID
+            const [userId, setUserId] = useState(null); 
 
             // --- Effects ---
             
             // Effect for Firebase Authentication
             useEffect(() => {
-                // This app uses Anonymous Authentication.
-                // Make sure to enable it in your Firebase Console!
                 const unsubscribe = onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // User is signed in
-                    console.log("User is signed in:", user.uid);
                     setUserId(user.uid);
                 } else {
-                    // No user signed in, attempt anonymous sign-in
-                    console.log("No user signed in, attempting anonymous sign-in.");
                     try {
-                        // Check if config keys are placeholders
                         if (firebaseConfig.apiKey === "PASTE_YOUR_API_KEY_HERE") {
                             throw new Error("Firebase config is using placeholder values.");
                         }
@@ -241,7 +246,6 @@
                     } catch (error) {
                         console.error("Anonymous sign-in error:", error);
                         setFormStatus('error');
-                        // Provide a more specific error if it's the placeholder issue
                         if (error.message.includes("placeholder")) {
                             setErrorMessage("Configuration error. Please follow setup instructions.");
                         } else if (error.code === "auth/api-key-not-valid") {
@@ -252,28 +256,70 @@
                     }
                 }
                 });
-                
-                // Cleanup subscription on unmount
                 return () => unsubscribe();
-            }, []); // Empty dependency array ensures this runs only once
+            }, []);
+
+            // --- Validation Logic ---
+            const validateField = (name, value) => {
+                let error = null;
+                // 1. General "Required" Check
+                if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+                    // Check if it's a required field. 'whatsAppConsent' and 'website' are not.
+                    const requiredFields = [
+                        'firstName', 'lastName', 'email', 'sector', 'userType',
+                        'companyName', 'companySize', 'hiringIntent', // Company
+                        'country', 'phoneNumber', 'level' // Talent
+                    ];
+                    // We only care about fields that *should* be validated based on userType
+                    if (requiredFields.includes(name)) {
+                         error = 'This field is required';
+                    }
+                }
+
+                // 2. Specific Field Logic (only if no "required" error)
+                if (!error) {
+                    if (name === 'email') {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(value)) error = 'Invalid email address';
+                    }
+                    if (name === 'phoneNumber') {
+                        const phoneRegex = /^\d{6,14}$/; // 6-14 digits
+                        if (!phoneRegex.test(value)) error = 'Must be 6-14 digits only';
+                    }
+                    // We don't validate names beyond "required" to allow for hyphens, apostrophes, etc.
+                }
+
+                // Set error for this field
+                setFormErrors(prev => ({ ...prev, [name]: error }));
+                return error; // Return error for immediate use if needed
+            };
+
 
             // --- Event Handlers ---
 
-            const handleInputChange = (e) => {
-                const { name, value } = e.target;
-                setFormData(prev => ({ ...prev, [name]: value }));
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                const val = type === 'checkbox' ? checked : value;
+                
+                // 1. Set the form data state
+                setFormData(prev => ({ ...prev, [name]: val }));
+                
+                // 2. Validate the field in real-time
+                validateField(name, val);
             };
             
-            // New handler for checkboxes
-            const handleCheckboxChange = (e) => {
-                const { name, checked } = e.target;
-                setFormData(prev => ({ ...prev, [name]: checked }));
+            const handleBlur = (e) => {
+                const { name, value } = e.target;
+                // 1. Mark field as "touched"
+                setTouched(prev => ({ ...prev, [name]: true }));
+                // 2. Re-validate on blur
+                validateField(name, value);
             };
 
             const handleUserTypeChange = (e) => {
                 const type = e.target.value;
                 setUserType(type);
-                // Reset conditional fields when type changes
+                // Reset conditional fields and errors
                 setFormData(prev => ({
                     ...prev,
                     companyName: '',
@@ -284,52 +330,74 @@
                     phoneNumber: '',
                     whatsAppConsent: false,
                 }));
+                // Clear errors and touched state for conditional fields
+                setFormErrors({});
+                setTouched({});
             };
             
             const handleSubmit = async (e) => {
                 e.preventDefault();
+                setFormStatus('error'); // Clear previous general error message
+                setErrorMessage('');
 
-                // --- HONEYPOT CHECK ---
-                // If this field is filled out, it's a bot.
-                // We'll "fake" a success message to trick the bot.
+                // --- 1. HONEYPOT CHECK ---
                 if (formData.website) {
-                    console.log("Bot detected! Honeypot field was filled.");
+                    console.log("Bot detected!");
                     setFormStatus('success');
-                    // Set a generic success message just in case
-                    setSuccessMessage(`
-                        <h3 class="font-semibold text-lg mb-1">Thank You!</h3>
-                        <p>Your submission has been received.</p>
-                    `);
-                    return; // Stop here, do not save to database.
+                    setSuccessMessage(`<h3 class="font-semibold text-lg mb-1">Thank You!</h3><p>Your submission has been received.</p>`);
+                    return; 
                 }
-                // --- END HONEYPOT CHECK ---
                 
+                // --- 2. AUTH CHECK ---
                 if (!userId) {
                     setErrorMessage("Authentication not ready. Please wait a moment and try again.");
-                    setFormStatus('error');
                     return;
                 }
 
-                // --- Validation ---
+                // --- 3. FINAL VALIDATION ON SUBMIT ---
+                let formIsValid = true;
+                const newErrors = {};
+                const newTouched = {};
+
+                // Define fields that are *always* required
+                const baseFields = ['firstName', 'lastName', 'email', 'sector'];
                 if (!userType) {
+                    formIsValid = false;
                     setErrorMessage('Please select whether you are a Company or Professional.');
-                    setFormStatus('error');
-                    return;
                 }
                 
-                if (!formData.firstName || !formData.lastName || !formData.email || !formData.sector) {
-                    setErrorMessage('Please fill out all required fields.');
-                    setFormStatus('error');
-                    return;
-                }
-                
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(formData.email)) {
-                    setErrorMessage('Please enter a valid email address.');
-                    setFormStatus('error');
-                    return;
+                // Conditionally add fields based on userType
+                let fieldsToValidate = [...baseFields];
+                if (userType === 'Company') {
+                    fieldsToValidate = [...fieldsToValidate, 'companyName', 'companySize', 'hiringIntent'];
+                } else if (userType === 'Talent') {
+                    fieldsToValidate = [...fieldsToValidate, 'country', 'phoneNumber', 'level'];
                 }
 
+                // Loop and validate all required fields
+                fieldsToValidate.forEach(name => {
+                    const error = validateField(name, formData[name]);
+                    if (error) {
+                        newErrors[name] = error;
+                        formIsValid = false;
+                    }
+                    newTouched[name] = true; // Mark all as touched to show errors
+                });
+
+                setFormErrors(newErrors);
+                setTouched(newTouched);
+
+                if (!formIsValid) {
+                    if (!errorMessage) { // Only set this if a specific error isn't already set
+                        setErrorMessage('Please fix the errors in the form.');
+                    }
+                    return;
+                }
+                // --- End Validation ---
+
+                // --- 4. PREPARE AND SUBMIT DATA ---
+                setFormStatus('submitting');
+                
                 // Find the selected country object
                 const selectedCountry = africanCountries.find(c => c.name === formData.country);
 
@@ -343,43 +411,18 @@
                     submitterUserId: userId,
                 };
 
-                let isValid = true;
                 if (userType === 'Company') {
-                    if (!formData.companyName || !formData.companySize || !formData.hiringIntent) {
-                        isValid = false;
-                    } else {
-                        data.companyName = formData.companyName;
-                        data.companySize = formData.companySize;
-                        data.hiringIntent = formData.hiringIntent;
-                    }
+                    data.companyName = formData.companyName;
+                    data.companySize = formData.companySize;
+                    data.hiringIntent = formData.hiringIntent;
                 } else if (userType === 'Talent') {
-                    // Updated validation for Talent
-                    const phoneRegex = /^\d{6,14}$/; // Simple regex for 6-14 digits
-                    if (!formData.country || !formData.level || !formData.phoneNumber) {
-                        isValid = false;
-                    } else if (!phoneRegex.test(formData.phoneNumber)) {
-                        setErrorMessage('Please enter a valid phone number (digits only).');
-                        setFormStatus('error');
-                        return;
-                    } else {
-                        data.country = formData.country;
-                        data.level = formData.level;
-                        data.phoneNumber = `${selectedCountry.code}${formData.phoneNumber}`; // Store full number
-                        data.whatsAppConsent = formData.whatsAppConsent;
-                    }
+                    data.country = formData.country;
+                    data.level = formData.level;
+                    data.phoneNumber = `${selectedCountry.code}${formData.phoneNumber}`; // Store full number
+                    data.whatsAppConsent = formData.whatsAppConsent;
                 }
-
-                if (!isValid) {
-                    setErrorMessage('Please fill out all required fields.');
-                    setFormStatus('error');
-                    return;
-                }
-                // --- End Validation ---
-
-                setFormStatus('submitting');
                 
                 try {
-                    // This is the name of your collection in Firestore
                     const collectionPath = "waitlist"; 
                     await addDoc(collection(db, collectionPath), data);
                     
@@ -396,7 +439,6 @@
                                 <p>Vantis is officially launching in Nigeria in December 2025! You're on the priority list for exclusive access to job opportunities and launch updates.</p>
                             `);
                         } else {
-                            // --- THIS IS THE UPDATED MESSAGE ---
                             setSuccessMessage(`
                                 <h3 class="font-semibold text-lg mb-1">Thanks for Registering!</h3>
                                 <p>We launch in Nigeria first. You’re now queued for our Africa-wide expansion and will be notified as soon as your country goes live.</p>
@@ -415,6 +457,11 @@
             // --- Render Logic ---
             const isLoading = formStatus === 'submitting';
             const selectedCountry = africanCountries.find(c => c.name === formData.country);
+            
+            // Helper to check if a field is valid (touched and no error)
+            const isFieldValid = (name) => touched[name] && !formErrors[name];
+            // Helper to get error text
+            const getError = (name) => touched[name] && formErrors[name];
 
             return (
                 <div className="text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center min-h-screen px-4 py-8" style={{ fontFamily: "'Gotham', 'Inter', sans-serif" }}>
@@ -445,7 +492,6 @@
 
                 <div className="w-full max-w-xl text-center py-16 sm:py-24">
                     
-                    {/* This div now just wraps the logo component */}
                     <div className="h-14 w-auto mx-auto mb-10 fade-in flex items-center justify-center" style={{ animationDelay: "0.1s" }}>
                         <VantisLogo />
                     </div>
@@ -457,112 +503,98 @@
                     Connecting elite African professionals with leading UK companies. Compliant, cost-effective, and transformative. Sign up for exclusive launch updates.
                     </p>
 
-                    <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-slate-800/60 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-6 sm:space-y-7 fade-in" style={{ animationDelay: "0.7s" }}>
+                    <form onSubmit={handleSubmit} noValidate className="bg-white/80 dark:bg-slate-800/60 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-6 sm:space-y-7 fade-in" style={{ animationDelay: "0.7s" }}>
                     
                     {formStatus !== 'success' && (
                         <div id="formFields" className="space-y-6 sm:space-y-7">
                         
-                        {/* --- HONEYPOT FIELD (INVISIBLE) --- */}
                         <div className="vantis-hp-field" aria-hidden="true">
                             <label htmlFor="website">Website</label>
-                            <input 
-                                type="text" 
-                                id="website" 
-                                name="website" 
-                                value={formData.website} 
-                                onChange={handleInputChange} 
-                                tabIndex="-1" 
-                                autoComplete="off"
-                            />
+                            <input type="text" id="website" name="website" value={formData.website} onChange={handleChange} tabIndex="-1" autoComplete="off" />
                         </div>
-                        {/* --- END HONEYPOT FIELD --- */}
 
                         <div>
                             <label className={`${formLabelClasses} text-center mb-4`}>I am primarily interested as a...</label>
                             <div className="grid grid-cols-2 gap-4">
-                            
-                            <label>
-                                <input 
-                                    type="radio" 
-                                    name="userType" 
-                                    value="Company"
-                                    checked={userType === 'Company'}
-                                    onChange={handleUserTypeChange}
-                                    className="sr-only"
-                                    required
-                                />
-                                <div 
-                                    className={`${audienceChoiceBaseClasses} ${userType === 'Company' ? audienceChoiceSelectedClasses : ''}`}
-                                >
-                                    <span className="font-medium text-slate-800 dark:text-slate-100">UK Company</span>
-                                    <span className="block text-xs text-slate-500 dark:text-slate-400">looking to hire</span>
-                                </div>
-                            </label>
-                            
-                            <label>
-                                <input 
-                                    type="radio" 
-                                    name="userType" 
-                                    value="Talent"
-                                    checked={userType === 'Talent'}
-                                    onChange={handleUserTypeChange}
-                                    className="sr-only"
-                                    required
-                                />
-                                <div
-                                    className={`${audienceChoiceBaseClasses} ${userType === 'Talent' ? audienceChoiceSelectedClasses : ''}`}
-                                >
-                                    <span className="font-medium text-slate-800 dark:text-slate-100">Professional</span>
-                                    <span className="block text-xs text-slate-500 dark:text-slate-400">seeking opportunities</span>
-                                </div>
-                            </label>
-                            
+                                <label>
+                                    <input type="radio" name="userType" value="Company" checked={userType === 'Company'} onChange={handleUserTypeChange} className="sr-only" required />
+                                    <div className={`${audienceChoiceBaseClasses} ${userType === 'Company' ? audienceChoiceSelectedClasses : ''}`}>
+                                        <span className="font-medium text-slate-800 dark:text-slate-100">UK Company</span>
+                                        <span className="block text-xs text-slate-500 dark:text-slate-400">looking to hire</span>
+                                    </div>
+                                </label>
+                                <label>
+                                    <input type="radio" name="userType" value="Talent" checked={userType === 'Talent'} onChange={handleUserTypeChange} className="sr-only" required />
+                                    <div className={`${audienceChoiceBaseClasses} ${userType === 'Talent' ? audienceChoiceSelectedClasses : ''}`}>
+                                        <span className="font-medium text-slate-800 dark:text-slate-100">Professional</span>
+                                        <span className="block text-xs text-slate-500 dark:text-slate-400">seeking opportunities</span>
+                                    </div>
+                                </label>
                             </div>
+                            {/* --- NEW: Error for UserType --- */}
+                            {getError('userType') && <p className={errorTextClasses + " text-center"}>{getError('userType')}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
                             <div>
                                 <label htmlFor="firstName" className={formLabelClasses}>First Name</label>
-                                <input type="text" id="firstName" name="firstName" required className={formInputClasses} placeholder="First Name" value={formData.firstName} onChange={handleInputChange} />
+                                <div className="relative">
+                                    <input type="text" id="firstName" name="firstName" required className={formInputClasses} placeholder="First Name" value={formData.firstName} onChange={handleChange} onBlur={handleBlur} />
+                                    {isFieldValid('firstName') && <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                </div>
+                                {getError('firstName') && <p className={errorTextClasses}>{getError('firstName')}</p>}
                             </div>
                             <div>
                                 <label htmlFor="lastName" className={formLabelClasses}>Last Name</label>
-                                <input type="text" id="lastName" name="lastName" required className={formInputClasses} placeholder="Last Name" value={formData.lastName} onChange={handleInputChange} />
+                                <div className="relative">
+                                    <input type="text" id="lastName" name="lastName" required className={formInputClasses} placeholder="Last Name" value={formData.lastName} onChange={handleChange} onBlur={handleBlur} />
+                                    {isFieldValid('lastName') && <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                </div>
+                                {getError('lastName') && <p className={errorTextClasses}>{getError('lastName')}</p>}
                             </div>
                         </div>
 
                         <div>
                             <label htmlFor="email" className={formLabelClasses}>Email Address</label>
-                            <input type="email" id="email" name="email" required className={formInputClasses} placeholder="Email Address" value={formData.email} onChange={handleInputChange} />
+                            <div className="relative">
+                                <input type="email" id="email" name="email" required className={formInputClasses} placeholder="Email Address" value={formData.email} onChange={handleChange} onBlur={handleBlur} />
+                                {isFieldValid('email') && <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                            </div>
+                            {getError('email') && <p className={errorTextClasses}>{getError('email')}</p>}
                         </div>
 
                         {userType === 'Company' && (
                             <div id="companyFields" className="space-y-6 sm:space-y-7">
-                            <div>
-                                <label htmlFor="companyName" className={formLabelClasses}>Company Name</label>
-                                <input type="text" id="companyName" name="companyName" required className={formInputClasses} placeholder="Company Name" value={formData.companyName} onChange={handleInputChange} />
-                            </div>
-                            
-                            <div>
-                                <label htmlFor="companySize" className={formLabelClasses}>Company Size</label>
-                                <select id="companySize" name="companySize" required className={selectClasses} value={formData.companySize} onChange={handleInputChange}>
-                                <option value="" disabled>Select employee count...</option>
-                                {companySizeOptions.map(option => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                ))}
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label htmlFor="hiringIntent" className={formLabelClasses}>Hiring Timeline</label>
-                                <select id="hiringIntent" name="hiringIntent" required className={selectClasses} value={formData.hiringIntent} onChange={handleInputChange}>
-                                <option value="" disabled>Select timeline...</option>
-                                {hiringIntentOptions.map(option => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                ))}
-                                </select>
-                            </div>
-                            
+                                <div>
+                                    <label htmlFor="companyName" className={formLabelClasses}>Company Name</label>
+                                    <div className="relative">
+                                        <input type="text" id="companyName" name="companyName" required className={formInputClasses} placeholder="Company Name" value={formData.companyName} onChange={handleChange} onBlur={handleBlur} />
+                                        {isFieldValid('companyName') && <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                    </div>
+                                    {getError('companyName') && <p className={errorTextClasses}>{getError('companyName')}</p>}
+                                </div>
+                                <div>
+                                    <label htmlFor="companySize" className={formLabelClasses}>Company Size</label>
+                                    <div className="relative">
+                                        <select id="companySize" name="companySize" required className={selectClasses} value={formData.companySize} onChange={handleChange} onBlur={handleBlur}>
+                                            <option value="" disabled>Select employee count...</option>
+                                            {companySizeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                        </select>
+                                        {isFieldValid('companySize') && <div className="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                    </div>
+                                    {getError('companySize') && <p className={errorTextClasses}>{getError('companySize')}</p>}
+                                </div>
+                                <div>
+                                    <label htmlFor="hiringIntent" className={formLabelClasses}>Hiring Timeline</label>
+                                    <div className="relative">
+                                        <select id="hiringIntent" name="hiringIntent" required className={selectClasses} value={formData.hiringIntent} onChange={handleChange} onBlur={handleBlur}>
+                                            <option value="" disabled>Select timeline...</option>
+                                            {hiringIntentOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                        </select>
+                                        {isFieldValid('hiringIntent') && <div className="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                    </div>
+                                    {getError('hiringIntent') && <p className={errorTextClasses}>{getError('hiringIntent')}</p>}
+                                </div>
                             </div>
                         )}
 
@@ -570,82 +602,70 @@
                             <div id="talentFields" className="space-y-6 sm:space-y-7">
                                 <div>
                                     <label htmlFor="country" className={formLabelClasses}>Country</label>
-                                    <select id="country" name="country" required className={selectClasses} value={formData.country} onChange={handleInputChange}>
-                                    <option value="" disabled>Select your country...</option>
-                                    {/* --- UPDATED to show flags in dropdown --- */}
-                                    {africanCountries.map(country => (
-                                        <option key={country.name} value={country.name}>
-                                            {country.flag} {country.name} ({country.code})
-                                        </option>
-                                    ))}
-                                    </select>
+                                    <div className="relative">
+                                        <select id="country" name="country" required className={selectClasses} value={formData.country} onChange={handleChange} onBlur={handleBlur}>
+                                            <option value="" disabled>Select your country...</option>
+                                            {africanCountries.map(country => (
+                                                <option key={country.name} value={country.name}>
+                                                    {country.flag} {country.name} ({country.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {isFieldValid('country') && <div className="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                    </div>
+                                    {getError('country') && <p className={errorTextClasses}>{getError('country')}</p>}
                                 </div>
                                 
-                                {/* --- NEW PHONE FIELD --- */}
                                 <div>
                                     <label htmlFor="phoneNumber" className={formLabelClasses}>Phone Number</label>
                                     <div className="flex">
-                                        {/* --- UPDATED to show flag in prefix --- */}
                                         <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-sm">
                                             {selectedCountry ? `${selectedCountry.flag} ${selectedCountry.code}` : '+...'}
                                         </span>
-                                        <input 
-                                            type="tel" 
-                                            id="phoneNumber" 
-                                            name="phoneNumber" 
-                                            required 
-                                            className={formInputClasses + " !rounded-l-none"}
-                                            placeholder="801 234 5678" 
-                                            value={formData.phoneNumber} 
-                                            onChange={handleInputChange}
-                                        />
+                                        <div className="relative flex-1">
+                                            <input type="tel" id="phoneNumber" name="phoneNumber" required className={formInputClasses + " !rounded-l-none"} placeholder="801 234 5678" value={formData.phoneNumber} onChange={handleChange} onBlur={handleBlur} />
+                                            {isFieldValid('phoneNumber') && <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                        </div>
                                     </div>
+                                    {getError('phoneNumber') && <p className={errorTextClasses}>{getError('phoneNumber')}</p>}
                                 </div>
-                                {/* --- END NEW PHONE FIELD --- */}
 
-                                {/* --- NEW WHATSAPP CHECKBOX (MOVED) --- */}
                                 <div className="flex items-center gap-2 -mt-3 text-left">
-                                    <input
-                                        type="checkbox"
-                                        id="whatsAppConsent"
-                                        name="whatsAppConsent"
-                                        checked={formData.whatsAppConsent}
-                                        onChange={handleCheckboxChange}
-                                        className={checkboxClasses}
-                                    />
+                                    <input type="checkbox" id="whatsAppConsent" name="whatsAppConsent" checked={formData.whatsAppConsent} onChange={handleChange} className={checkboxClasses} />
                                     <label htmlFor="whatsAppConsent" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                         Send me updates via WhatsApp
                                     </label>
                                 </div>
-                                {/* --- END WHATSAPP CHECKBOX --- */}
 
                                 <div>
                                     <label htmlFor="level" className={formLabelClasses}>Level of Competency / Role</label>
-                                    <select id="level" name="level" required className={selectClasses} value={formData.level} onChange={handleInputChange}>
-                                    <option value="" disabled>Select your level...</option>
-                                    {competencyLevels.map(option => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                    ))}
-                                    </select>
+                                    <div className="relative">
+                                        <select id="level" name="level" required className={selectClasses} value={formData.level} onChange={handleChange} onBlur={handleBlur}>
+                                            <option value="" disabled>Select your level...</option>
+                                            {competencyLevels.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                        </select>
+                                        {isFieldValid('level') && <div className="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                                    </div>
+                                    {getError('level') && <p className={errorTextClasses}>{getError('level')}</p>}
                                 </div>
-                                
                             </div>
                         )}
 
                         <div>
                             <label htmlFor="sector" className={formLabelClasses}>Your Sector / Company Sector</label>
-                            <select id="sector" name="sector" required className={selectClasses} value={formData.sector} onChange={handleInputChange}>
-                            <option value="" disabled>Select your industry...</option>
-                            {sectorOptions.map(option => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                            </select>
+                            <div className="relative">
+                                <select id="sector" name="sector" required className={selectClasses} value={formData.sector} onChange={handleChange} onBlur={handleBlur}>
+                                    <option value="" disabled>Select your industry...</option>
+                                    {sectorOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                                {isFieldValid('sector') && <div className="absolute inset-y-0 right-0 pr-10 flex items-center pointer-events-none"><CheckCircleIcon /></div>}
+                            </div>
+                            {getError('sector') && <p className={errorTextClasses}>{getError('sector')}</p>}
                         </div>
 
                         <div className="pt-2">
-                            {/* --- THIS BUTTON IS NOW LARGER (text-lg) AND HAS NEW TEXT --- */}
                             <button type="submit" id="submitButton" disabled={isLoading || !userId} className="w-full font-bold text-lg py-4 px-8 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-white bg-[#45B930] hover:bg-[#3da82b] transition-colors">
-                            {isLoading ? 'Submitting...' : (userId ? 'Notify me when you launch' : 'Connecting...') }
+                                {isLoading ? 'Submitting...' : (userId ? 'Notify me when you launch' : 'Connecting...') }
                             </button>
                         </div>
                         </div>
@@ -656,7 +676,7 @@
                             dangerouslySetInnerHTML={{ __html: successMessage }} />
                     )}
 
-                    {formStatus === 'error' && (
+                    {(formStatus === 'error' && errorMessage) && (
                         <div id="errorMessage" className="text-center bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-lg">
                             <p>{errorMessage}</p>
                         </div>
