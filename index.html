@@ -78,19 +78,15 @@
         const audienceChoiceBaseClasses = "cursor-pointer border border-slate-300 dark:border-slate-700 rounded-lg p-4 text-center transition-all duration-200 hover:border-[#04ACD9] dark:hover:border-[#04ACD9]";
         const audienceChoiceSelectedClasses = "border-[#04ACD9] dark:border-[#04ACD9] ring-2 ring-[#04ACD9] dark:ring-[#04ACD9] bg-[#04ACD9]/5 dark:bg-[#04ACD9]/10";
 
-        // --- SVG Logo Component ---
-        const VantisLogo = () => (
-          <svg className="h-14 w-auto" fill="none" viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg">
-            <path d="M36.195 24.87C33.66 24.87 31.62 24.165 30.075 22.755C28.53 21.315 27.765 19.38 27.765 17.01C27.765 14.64 28.53 12.705 30.075 11.295C31.62 9.855 33.66 9.15 36.195 9.15C38.73 9.15 40.755 9.855 42.27 11.295C43.785 12.705 44.55 14.64 44.55 17.01C44.55 19.38 43.785 21.315 42.27 22.755C40.755 24.165 38.73 24.87 36.195 24.87ZM36.195 22.2C37.56 22.2 38.64 21.75 39.465 20.91C40.29 20.07 40.695 18.735 40.695 17.01C40.695 15.285 40.29 13.95 39.465 13.11C38.64 12.27 37.56 11.85 36.195 11.85C34.83 11.85 33.75 12.27 32.925 13.11C32.1 13.95 31.695 15.285 31.695 17.01C31.695 18.735 32.1 20.07 32.925 20.91C33.75 21.75 34.83 22.2 36.195 22.2Z" className="fill-current text-[#04ACD9] dark:text-[#04ACD9]" />
-            <path d="M54.512 24.525V14.37H57.857L62.132 20.46V24.525H59.207V18.78L55.517 23.67H52.547L48.857 18.78V24.525H45.932V14.37H49.277L53.552 20.46V14.37H54.512Z" className="fill-current text-vantis-black dark:text-white" />
-            <path d="M66.453 24.525V9.495H69.378V24.525H66.453Z" className="fill-current text-vantis-black dark:text-white" />
-            <path d="M81.242 24.87C78.962 24.87 77.102 24.195 75.662 22.845C74.222 21.495 73.502 19.605 73.502 17.175V9.495H76.427V17.01C76.427 18.66 76.912 19.95 77.882 20.88C78.852 21.81 80.132 22.275 81.722 22.275C83.312 22.275 84.572 21.81 85.502 20.88C86.432 19.95 86.912 18.66 86.912 17.01V9.495H89.837V17.175C89.837 19.605 89.117 21.495 87.677 22.845C86.237 24.195 84.377 24.87 82.112 24.87H81.242Z" className="fill-current text-vantis-black dark:text-white" />
-            <path d="M103.882 24.525L99.302 17.76L94.722 24.525H91.137L97.552 14.895L91.437 5.4H95.022L99.302 11.76L103.582 5.4H107.167L101.052 14.895L107.467 24.525H103.882Z" className="fill-current text-vantis-black dark:text-white" />
-            <path d="M112.185 24.525V9.495H115.11V24.525H112.185Z" className="fill-current text-vantis-black dark:text-white" />
-            <path d="M130.638 18.525L126.318 9.495H129.588L132.228 15.39L134.868 9.495H138.138L133.818 18.525V24.525H130.638V18.525Z" className="fill-current text-vantis-black dark:text-white" />
-            <path d="M151.782 24.87C149.312 24.87 147.302 24.165 145.752 22.755C144.202 21.315 143.442 19.38 143.442 17.01C143.442 14.64 144.202 12.705 145.752 11.295C147.302 9.855 149.312 9.15 151.782 9.15C154.312 9.15 156.337 9.855 157.852 11.295C159.367 12.705 160.132 14.64 160.132 17.01C160.132 19.38 159.367 21.315 157.852 22.755C156.337 24.165 154.312 24.87 151.782 24.87ZM151.782 22.2C153.147 22.2 154.227 21.75 155.052 20.91C155.877 20.07 156.292 18.735 156.292 17.01C156.292 15.285 155.877 13.95 155.052 13.11C154.227 12.27 153.147 11.85 151.782 11.85C150.417 11.85 149.337 12.27 148.512 13.11C147.687 13.95 147.282 15.285 147.282 17.01C147.282 18.735 147.687 20.07 148.512 20.91C149.337 21.75 150.417 22.2 151.782 22.2Z" className="fill-current text-[#45B930] dark:text-[#45B930]" />
-          </svg>
-        );
+// --- SVG Logo Component ---
+// This now points to your logo file in the GitHub repository.
+const VantisLogo = () => (
+  <img 
+    src="Vantis-Logo.svg" 
+    alt="Vantis Logo" 
+    className="h-14 w-auto"
+  />
+);
 
         // --- Form Select Options Constants ---
         const companySizeOptions = [
@@ -523,4 +519,5 @@
     </script>
 </body>
 </html>
+
 
