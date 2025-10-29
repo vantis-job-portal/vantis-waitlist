@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vantis - Coming Soon</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel (for running JSX in the browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase JS SDK -->
+    <script type="module">
+        // These are imported here to be available in the text/babel script
+        import { initializeApp, setLogLevel } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        
+        // Make them globally available for the Babel script
+        window.firebase = {
+            initializeApp, setLogLevel,
+            getFirestore, collection, addDoc, serverTimestamp,
+            getAuth, signInAnonymously, onAuthStateChanged
+        };
+    </script>
+
+    <style>
+        /* This prevents a flash of unstyled content before Tailwind loads */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-[#000000]">
+    
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+
+    <!-- 
+      This is your React Application.
+      Babel will transpile this JSX code live in the browser.
+    -->
+    <script type="text/babel">
+        // Pull in the Firebase functions we made global
+        const {
+            initializeApp, setLogLevel,
+            getFirestore, collection, addDoc, serverTimestamp,
+            getAuth, signInAnonymously, onAuthStateChanged
+        } = window.firebase;
+
+  
+      const firebaseConfig = {
+  apiKey: "AIzaSyDnGnZz0jmqmOgWpVHzo0q-YAnl0uBMDMY",
+  authDomain: "vantis-waitlist.firebaseapp.com",
+  projectId: "vantis-waitlist",
+  storageBucket: "vantis-waitlist.firebasestorage.app",
+  messagingSenderId: "131075812819",
+  appId: "1:131075812819:web:2bc5b1ade1a0e01a7ed326"
+};
+        // -----------------------------------------
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        // setLogLevel('Debug'); // Uncomment for detailed logs
+
+        // --- Constants for styling (from your original @apply) ---
+        const formInputClasses = "w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#000000]/50 focus:ring-2 focus:ring-[#04ACD9] focus:border-[#04ACD9] focus:outline-none transition-all duration-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-200 shadow-sm focus:bg-white dark:focus:bg-[#000000]/70";
+        const formLabelClasses = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 text-left";
+        const selectClasses = `${formInputClasses} appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,<svg_xmlns="http://www.w3.org/2000/svg"_viewBox="0_0_20_20"_fill="%2364748b"><path_fill-rule="evenodd"_d="M5.293_7.293a1_1_0_011.414_0L10_10.586l3.293-3.293a1_1_0_111.414_1.414l-4_4a1_1_0_01-1.414_0l-4-4a1_1_0_010-1.414z"_clip-rule="evenodd"_/></svg>')] dark:bg-[url('data:image/svg+xml;charset=UTF-8,<svg_xmlns="http://www.w3.org/2000/svg"_viewBox="0_0_20_20"_fill="%2394a3b8"><path_fill-rule="evenodd"_d="M5.293_7.293a1_1_0_011.414_0L10_10.586l3.293-3.293a1_1_0_111.414_1.414l-4_4a1_1_0_01-1.414_0l-4-4a1_1_0_010-1.414z"_clip-rule="evenodd"_/></svg>')] bg-no-repeat bg-[position:right_0.75rem_center] bg-[length:1.25em] pr-10`;
+        const audienceChoiceBaseClasses = "cursor-pointer border border-slate-300 dark:border-slate-700 rounded-lg p-4 text-center transition-all duration-200 hover:border-[#04ACD9] dark:hover:border-[#04ACD9]";
+        const audienceChoiceSelectedClasses = "border-[#04ACD9] dark:border-[#04ACD9] ring-2 ring-[#04ACD9] dark:ring-[#04ACD9] bg-[#04ACD9]/5 dark:bg-[#04ACD9]/10";
+
+        // --- SVG Logo Component ---
+        const VantisLogo = () => (
+          <svg className="h-14 w-auto" fill="none" viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M36.195 24.87C33.66 24.87 31.62 24.165 30.075 22.755C28.53 21.315 27.765 19.38 27.765 17.01C27.765 14.64 28.53 12.705 30.075 11.295C31.62 9.855 33.66 9.15 36.195 9.15C38.73 9.15 40.755 9.855 42.27 11.295C43.785 12.705 44.55 14.64 44.55 17.01C44.55 19.38 43.785 21.315 42.27 22.755C40.755 24.165 38.73 24.87 36.195 24.87ZM36.195 22.2C37.56 22.2 38.64 21.75 39.465 20.91C40.29 20.07 40.695 18.735 40.695 17.01C40.695 15.285 40.29 13.95 39.465 13.11C38.64 12.27 37.56 11.85 36.195 11.85C34.83 11.85 33.75 12.27 32.925 13.11C32.1 13.95 31.695 15.285 31.695 17.01C31.695 18.735 32.1 20.07 32.925 20.91C33.75 21.75 34.83 22.2 36.195 22.2Z" className="fill-current text-[#04ACD9] dark:text-[#04ACD9]" />
+            <path d="M54.512 24.525V14.37H57.857L62.132 20.46V24.525H59.207V18.78L55.517 23.67H52.547L48.857 18.78V24.525H45.932V14.37H49.277L53.552 20.46V14.37H54.512Z" className="fill-current text-vantis-black dark:text-white" />
+            <path d="M66.453 24.525V9.495H69.378V24.525H66.453Z" className="fill-current text-vantis-black dark:text-white" />
+            <path d="M81.242 24.87C78.962 24.87 77.102 24.195 75.662 22.845C74.222 21.495 73.502 19.605 73.502 17.175V9.495H76.427V17.01C76.427 18.66 76.912 19.95 77.882 20.88C78.852 21.81 80.132 22.275 81.722 22.275C83.312 22.275 84.572 21.81 85.502 20.88C86.432 19.95 86.912 18.66 86.912 17.01V9.495H89.837V17.175C89.837 19.605 89.117 21.495 87.677 22.845C86.237 24.195 84.377 24.87 82.112 24.87H81.242Z" className="fill-current text-vantis-black dark:text-white" />
+            <path d="M103.882 24.525L99.302 17.76L94.722 24.525H91.137L97.552 14.895L91.437 5.4H95.022L99.302 11.76L103.582 5.4H107.167L101.052 14.895L107.467 24.525H103.882Z" className="fill-current text-vantis-black dark:text-white" />
+            <path d="M112.185 24.525V9.495H115.11V24.525H112.185Z" className="fill-current text-vantis-black dark:text-white" />
+            <path d="M130.638 18.525L126.318 9.495H129.588L132.228 15.39L134.868 9.495H138.138L133.818 18.525V24.525H130.638V18.525Z" className="fill-current text-vantis-black dark:text-white" />
+            <path d="M151.782 24.87C149.312 24.87 147.302 24.165 145.752 22.755C144.202 21.315 143.442 19.38 143.442 17.01C143.442 14.64 144.202 12.705 145.752 11.295C147.302 9.855 149.312 9.15 151.782 9.15C154.312 9.15 156.337 9.855 157.852 11.295C159.367 12.705 160.132 14.64 160.132 17.01C160.132 19.38 159.367 21.315 157.852 22.755C156.337 24.165 154.312 24.87 151.782 24.87ZM151.782 22.2C153.147 22.2 154.227 21.75 155.052 20.91C155.877 20.07 156.292 18.735 156.292 17.01C156.292 15.285 155.877 13.95 155.052 13.11C154.227 12.27 153.147 11.85 151.782 11.85C150.417 11.85 149.337 12.27 148.512 13.11C147.687 13.95 147.282 15.285 147.282 17.01C147.282 18.735 147.687 20.07 148.512 20.91C149.337 21.75 150.417 22.2 151.782 22.2Z" className="fill-current text-[#45B930] dark:text-[#45B930]" />
+          </svg>
+        );
+
+        // --- Form Select Options Constants ---
+        const companySizeOptions = [
+          { value: "1-10", label: "1-10 employees" },
+          { value: "11-50", label: "11-50 employees" },
+          { value: "51-200", label: "51-200 employees" },
+          { value: "201-1000", label: "201-1,000 employees" },
+          { value: "1000+", label: "1,000+ employees" },
+        ];
+
+        const hiringIntentOptions = [
+          { value: "Active (0-3 Months)", label: "Actively hiring (0-3 months)" },
+          { value: "Planning (3-6 Months)", label: "Planning to hire (3-6 months)" },
+          { value: "Exploring (6+ Months)", label: "Just exploring (6+ months)" },
+        ];
+
+        const africanCountries = [
+          "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde", "Cameroon", 
+          "Central African Republic", "Chad", "Comoros", "Congo (Congo-Brazzaville)", "Cote d'Ivoire", "Djibouti", 
+          "DR Congo (Congo-Kinshasa)", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", "Gabon", 
+          "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya", "Madagascar", 
+          "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", 
+          "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone", "Somalia", "South Africa", 
+          "South Sudan", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia", "Zimbabwe"
+        ];
+
+        const competencyLevels = [
+          { value: "Executive/C-Suite", label: "Executive / C-Suite" },
+          { value: "Senior Management", label: "Senior Management" },
+          { value: "Mid-Level Professional", label: "Mid-Level Professional" },
+          { value: "Junior/Entry-Level", label: "Junior / Entry-Level" },
+          { value: "Founder/Owner", label: "Founder / Owner" },
+          { value: "Specialist/Individual Contributor", label: "Specialist / Individual Contributor" },
+          { value: "Other", label: "Other" },
+        ];
+
+        const sectorOptions = [
+          { value: "Technology", label: "Technology" },
+          { value: "Finance", label: "Finance" },
+          { value: "Marketing", label: "Marketing & Advertising" },
+          { value: "Consulting", label: "Consulting" },
+          { value: "Recruitment", label: "Recruitment/HR" },
+          { value: "Healthcare", label: "Healthcare" },
+          { value: "Education", label: "Education" },
+          { value: "Other", label: "Other" },
+        ];
+
+        // --- Main App Component ---
+        function App() {
+            // Use React hooks
+            const { useState, useEffect } = React;
+
+            // --- State Hooks ---
+            const [userType, setUserType] = useState(''); // 'Company' or 'Talent'
+            const [formData, setFormData] = useState({
+                firstName: '',
+                lastName: '',
+                email: '',
+                companyName: '',
+                companySize: '',
+                hiringIntent: '',
+                country: '',
+                level: '',
+                sector: '',
+            });
+            const [formStatus, setFormStatus] = useState('idle'); // 'idle', 'submitting', 'success', 'error'
+            const [successMessage, setSuccessMessage] = useState('');
+            const [errorMessage, setErrorMessage] = useState('');
+            const [userId, setUserId] = useState(null); // To store the authenticated user's ID
+
+            // --- Effects ---
+            
+            // Effect for Firebase Authentication
+            useEffect(() => {
+                // This app uses Anonymous Authentication.
+                // Make sure to enable it in your Firebase Console!
+                const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // User is signed in
+                    console.log("User is signed in:", user.uid);
+                    setUserId(user.uid);
+                } else {
+                    // No user signed in, attempt anonymous sign-in
+                    console.log("No user signed in, attempting anonymous sign-in.");
+                    try {
+                        // Check if config keys are placeholders
+                        if (firebaseConfig.apiKey === "PASTE_YOUR_API_KEY_HERE") {
+                            throw new Error("Firebase config is using placeholder values.");
+                        }
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Anonymous sign-in error:", error);
+                        setFormStatus('error');
+                        // Provide a more specific error if it's the placeholder issue
+                        if (error.message.includes("placeholder")) {
+                            setErrorMessage("Configuration error. Please follow setup instructions.");
+                        } else if (error.code === "auth/api-key-not-valid") {
+                             setErrorMessage("Firebase API key is not valid. Please check your config.");
+                        } else {
+                            setErrorMessage("Could not connect. Please refresh the page.");
+                        }
+                    }
+                }
+                });
+                
+                // Cleanup subscription on unmount
+                return () => unsubscribe();
+            }, []); // Empty dependency array ensures this runs only once
+
+            // --- Event Handlers ---
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+
+            const handleUserTypeChange = (e) => {
+                const type = e.target.value;
+                setUserType(type);
+                // Reset conditional fields when type changes
+                setFormData(prev => ({
+                    ...prev,
+                    companyName: '',
+                    companySize: '',
+                    hiringIntent: '',
+                    country: '',
+                    level: '',
+                }));
+            };
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                if (!userId) {
+                    setErrorMessage("Authentication not ready. Please wait a moment and try again.");
+                    setFormStatus('error');
+                    return;
+                }
+
+                // --- Validation ---
+                if (!userType) {
+                    setErrorMessage('Please select whether you are a Company or Professional.');
+                    setFormStatus('error');
+                    return;
+                }
+                
+                if (!formData.firstName || !formData.lastName || !formData.email || !formData.sector) {
+                    setErrorMessage('Please fill out all required fields.');
+                    setFormStatus('error');
+                    return;
+                }
+                
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.email)) {
+                    setErrorMessage('Please enter a valid email address.');
+                    setFormStatus('error');
+                    return;
+                }
+
+                const data = {
+                    userType: userType,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    sector: formData.sector,
+                    timestamp: serverTimestamp(),
+                    submitterUserId: userId,
+                };
+
+                let isValid = true;
+                if (userType === 'Company') {
+                    if (!formData.companyName || !formData.companySize || !formData.hiringIntent) {
+                        isValid = false;
+                    } else {
+                        data.companyName = formData.companyName;
+                        data.companySize = formData.companySize;
+                        data.hiringIntent = formData.hiringIntent;
+                    }
+                } else if (userType === 'Talent') {
+                    if (!formData.country || !formData.level) {
+                        isValid = false;
+                    } else {
+                        data.country = formData.country;
+                        data.level = formData.level;
+                    }
+                }
+
+                if (!isValid) {
+                    setErrorMessage('Please fill out all required fields.');
+                    setFormStatus('error');
+                    return;
+                }
+                // --- End Validation ---
+
+                setFormStatus('submitting');
+                
+                try {
+                    // This is the name of your collection in Firestore
+                    const collectionPath = "waitlist"; 
+                    await addDoc(collection(db, collectionPath), data);
+                    
+                    // Set success message based on user type
+                    if (userType === 'Company') {
+                        setSuccessMessage(`
+                            <h3 class="font-semibold text-lg mb-1">Thank You!</h3>
+                            <p>We'll be in touch soon to discuss how Vantis can help you build a smarter, safer, and more cost-effective team.</p>
+                        `);
+                    } else if (userType === 'Talent') {
+                        if (formData.country === 'Nigeria') {
+                            setSuccessMessage(`
+                                <h3 class="font-semibold text-lg mb-1">Get Ready, Nigeria!</h3>
+                                <p>Vantis is officially launching in Nigeria in December 2025! You're on the priority list for exclusive access to job opportunities and launch updates.</p>
+                            `);
+                        } else {
+                            setSuccessMessage(`
+                                <h3 class="font-semibold text-lg mb-1">You're on our Global Radar!</h3>
+                                <p>Thanks for signing up! Our immediate focus is on our Nigeria launch. By registering, you've secured your place for our future expansion, and we'll notify you as new opportunities become available.</p>
+                            `);
+                        }
+                    }
+                    setFormStatus('success');
+
+                } catch (error) {
+                    console.error("Error adding document: ", error);
+                    setErrorMessage('Something went wrong. Please try again later.');
+                    setFormStatus('error');
+                }
+            };
+
+            // --- Render Logic ---
+            const isLoading = formStatus === 'submitting';
+
+            return (
+                <div className="text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center min-h-screen px-4 py-8" style={{ fontFamily: "'Gotham', 'Inter', sans-serif" }}>
+                
+                {/* Background Animation & Keyframes Style Tag */}
+                <style>{`
+                    @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(15px); }
+                    to { opacity: 1; transform: translateY(0); }
+                    }
+                    .fade-in {
+                    animation: fadeIn 0.9s ease-out forwards;
+                    }
+                    @keyframes slowBlob {
+                    0%, 100% { transform: translate(0px, 0px) scale(1); }
+                    25% { transform: translate(60px, -100px) scale(1.15); }
+                    50% { transform: translate(-40px, 80px) scale(0.9); }
+                    75% { transform: translate(100px, 50px) scale(1.1); }
+                    }
+                    .animate-slow-blob {
+                    animation: slowBlob 25s infinite ease-in-out;
+                    }
+                `}</style>
+
+                <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden">
+                    <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] bg-gradient-to-tr from-[#04ACD9]/15 via-[#45B930]/10 to-purple-500/10 dark:from-[#04ACD9]/15 dark:via-[#45B930]/10 dark:to-purple-900/15 rounded-full filter blur-3xl opacity-60 animate-slow-blob"></div>
+                </div>
+
+                <div className="w-full max-w-xl text-center py-16 sm:py-24">
+                    <div className="h-14 w-auto mx-auto mb-10 fade-in flex items-center justify-center" style={{ animationDelay: "0.1s" }}>
+                        <VantisLogo />
+                    </div>
+                    
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#000000] dark:text-white mb-5 fade-in leading-tight" style={{ animationDelay: "0.3s" }}>
+                    The Future of Global Talent is Coming.
+                    </h1>
+                    <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 mb-12 fade-in" style={{ animationDelay: "0.5s" }}>
+                    Connecting elite African professionals with leading UK companies. Compliant, cost-effective, and transformative. Sign up for exclusive launch updates.
+                    </p>
+
+                    <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-slate-800/60 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-6 sm:space-y-7 fade-in" style={{ animationDelay: "0.7s" }}>
+                    
+                    {formStatus !== 'success' && (
+                        <div id="formFields" className="space-y-6 sm:space-y-7">
+                        <div>
+                            <label className={`${formLabelClasses} text-center mb-4`}>I am primarily interested as a...</label>
+                            <div className="grid grid-cols-2 gap-4">
+                            
+                            <label>
+                                <input 
+                                    type="radio" 
+                                    name="userType" 
+                                    value="Company"
+                                    checked={userType === 'Company'}
+                                    onChange={handleUserTypeChange}
+                                    className="sr-only"
+                                    required
+                                />
+                                <div 
+                                    className={`${audienceChoiceBaseClasses} ${userType === 'Company' ? audienceChoiceSelectedClasses : ''}`}
+                                >
+                                    <span className="font-medium text-slate-800 dark:text-slate-100">UK Company</span>
+                                    <span className="block text-xs text-slate-500 dark:text-slate-400">looking to hire</span>
+                                </div>
+                            </label>
+                            
+                            <label>
+                                <input 
+                                    type="radio" 
+                                    name="userType" 
+                                    value="Talent"
+                                    checked={userType === 'Talent'}
+                                    onChange={handleUserTypeChange}
+                                    className="sr-only"
+                                    required
+                                />
+                                <div
+                                    className={`${audienceChoiceBaseClasses} ${userType === 'Talent' ? audienceChoiceSelectedClasses : ''}`}
+                                >
+                                    <span className="font-medium text-slate-800 dark:text-slate-100">Professional</span>
+                                    <span className="block text-xs text-slate-500 dark:text-slate-400">seeking opportunities</span>
+                                </div>
+                            </label>
+                            
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                            <div>
+                                <label htmlFor="firstName" className={formLabelClasses}>First Name</label>
+                                <input type="text" id="firstName" name="firstName" required className={formInputClasses} placeholder="First Name" value={formData.firstName} onChange={handleInputChange} />
+                            </div>
+                            <div>
+                                <label htmlFor="lastName" className={formLabelClasses}>Last Name</label>
+                                <input type="text" id="lastName" name="lastName" required className={formInputClasses} placeholder="Last Name" value={formData.lastName} onChange={handleInputChange} />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="email" className={formLabelClasses}>Email Address</label>
+                            <input type="email" id="email" name="email" required className={formInputClasses} placeholder="Email Address" value={formData.email} onChange={handleInputChange} />
+                        </div>
+
+                        {userType === 'Company' && (
+                            <div id="companyFields" className="space-y-6 sm:space-y-7">
+                            <div>
+                                <label htmlFor="companyName" className={formLabelClasses}>Company Name</label>
+                                <input type="text" id="companyName" name="companyName" required className={formInputClasses} placeholder="Company Name" value={formData.companyName} onChange={handleInputChange} />
+                            </div>
+                            
+                            <div>
+                                <label htmlFor="companySize" className={formLabelClasses}>Company Size</label>
+                                <select id="companySize" name="companySize" required className={selectClasses} value={formData.companySize} onChange={handleInputChange}>
+                                <option value="" disabled>Select employee count...</option>
+                                {companySizeOptions.map(option => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label htmlFor="hiringIntent" className={formLabelClasses}>Hiring Timeline</label>
+                                <select id="hiringIntent" name="hiringIntent" required className={selectClasses} value={formData.hiringIntent} onChange={handleInputChange}>
+                                <option value="" disabled>Select timeline...</option>
+                                {hiringIntentOptions.map(option => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                                </select>
+                            </div>
+                            
+                            </div>
+                        )}
+
+                        {userType === 'Talent' && (
+                            <div id="talentFields" className="space-y-6 sm:space-y-7">
+                            <div>
+                                <label htmlFor="country" className={formLabelClasses}>Country</label>
+                                <select id="country" name="country" required className={selectClasses} value={formData.country} onChange={handleInputChange}>
+                                <option value="" disabled>Select your country...</option>
+                                {africanCountries.map(country => (
+                                    <option key={country} value={country}>{country}</option>
+                                ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="level" className={formLabelClasses}>Level of Competency / Role</label>
+                                <select id="level" name="level" required className={selectClasses} value={formData.level} onChange={handleInputChange}>
+                                <option value="" disabled>Select your level...</option>
+                                {competencyLevels.map(option => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                                </select>
+                            </div>
+                            </div>
+                        )}
+
+                        <div>
+                            <label htmlFor="sector" className={formLabelClasses}>Your Sector / Company Sector</label>
+                            <select id="sector" name="sector" required className={selectClasses} value={formData.sector} onChange={handleInputChange}>
+                            <option value="" disabled>Select your industry...</option>
+                            {sectorOptions.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                            </select>
+                        </div>
+
+                        <div className="pt-2">
+                            <button type="submit" id="submitButton" disabled={isLoading || !userId} className="w-full font-bold py-4 px-8 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-white bg-[#45B930] hover:bg-[#3da82b] transition-colors">
+                            {isLoading ? 'Submitting...' : (userId ? 'Notify Me When You Launch' : 'Connecting...') }
+                            </button>
+                        </div>
+                        </div>
+                    )}
+
+                    {formStatus === 'success' && (
+                        <div id="successMessage" className="text-center bg-[#45B930]/10 dark:bg-[#45B930]/20 border border-[#45B930]/20 dark:border-[#45B930]/30 text-[#45B930] dark:text-[#45B930] px-6 py-6 rounded-lg"
+                            dangerouslySetInnerHTML={{ __html: successMessage }} />
+                    )}
+
+                    {formStatus === 'error' && (
+                        <div id="errorMessage" className="text-center bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-lg">
+                            <p>{errorMessage}</p>
+                        </div>
+                    )}
+                    </form>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-10 fade-in" style={{ animationDelay: "0.9s" }}>
+                    &copy; Vantis 2025. All rights reserved.
+                    </p>
+                </div>
+                </div>
+            );
+        }
+
+        // --- Render the App to the DOM ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
+
